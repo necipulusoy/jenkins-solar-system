@@ -150,13 +150,18 @@ pipeline {
        
     }
 
-    post {
-        always {
-            script {
-                if (fileExists('solar-system-gitops-argocd')) {
-                    sh 'rm -rf solar-system-gitops-argocd'
+        /*
+        post {
+            always {
+                script {
+                    if (fileExists('solar-system-gitops-argocd')) {
+                        sh 'rm -rf solar-system-gitops-argocd'
+                    }
                 }
             }
+        }
+        */
+
 
             junit allowEmptyResults: true, stdioRetention: '', testResults: 'test-results.xml'
             junit allowEmptyResults: true, stdioRetention: '', testResults: 'dependency-check-junit.xml' 
