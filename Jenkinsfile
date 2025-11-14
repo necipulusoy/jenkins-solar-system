@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+  agent {
+    kubernetes {
+      label 'k8s-agent-multi'
+    }
+  }
 
     tools {
         nodejs 'nodejs-22-6-0'
