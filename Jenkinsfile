@@ -5,9 +5,6 @@ pipeline {
     }
   }
 
-    tools {
-        nodejs 'Node.js 25.0.0'
-    }
 
     stages {
         stage('Node Version') {
