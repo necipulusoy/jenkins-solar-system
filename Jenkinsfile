@@ -10,8 +10,8 @@ pipeline {
         stage('Node Version') {
             steps {
                 sh '''
-                    node -v
-                    npm -v
+                    echo "deneme"
+                   echo "deneme-2"
                 '''
             }
         }
