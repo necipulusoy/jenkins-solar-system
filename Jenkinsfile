@@ -6,7 +6,7 @@ pipeline {
   }
 
     tools {
-        nodejs 'nodejs-22-6-0'
+        nodejs 'nodejs-25.0.0'
     }
 
     environment {
