@@ -6,12 +6,36 @@ pipeline {
   }
 
   stages {
-    stage('Node Version') {
+
+    stage('Show Workspace') {
       steps {
         container('nodejs') {
           sh '''
-            node -v
-            npm -v
+            echo "==== CURRENT WORKSPACE PATH ===="
+            pwd
+            echo "==== WORKSPACE CONTENT ===="
+            ls -al
+          '''
+        }
+      }
+    }
+
+    stage('Install Dependencies') {
+      steps {
+        container('nodejs') {
+          sh '''
+            npm install --no-audit
+          '''
+        }
+      }
+    }
+
+    stage('List Node Modules') {
+      steps {
+        container('nodejs') {
+          sh '''
+            echo "==== node_modules içerik örneği ===="
+            ls -al node_modules | head
           '''
         }
       }
