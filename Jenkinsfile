@@ -34,7 +34,7 @@ pipeline {
       steps {
         container('nodejs') {
           sh '''
-            echo "==== node_modules içerik örneği ===="
+            echo "==== node_modules içerik örneği-deneme ===="
             ls -al node_modules | head
           '''
         }
