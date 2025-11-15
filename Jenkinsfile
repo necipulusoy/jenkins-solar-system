@@ -7,36 +7,30 @@ pipeline {
 
   stages {
 
-    stage('Show Workspace') {
+    stage('Installing Dependencies') {
       steps {
         container('nodejs') {
-          sh '''
-            echo "==== CURRENT WORKSPACE PATH ===="
-            pwd
-            echo "==== WORKSPACE CONTENT ===="
-            ls -al
-          '''
+          sh 'npm install --no-audit'
         }
       }
     }
 
-    stage('Install Dependencies') {
+    stage('OWASP Dependency Check (Scan Only)') {
       steps {
-        container('nodejs') {
-          sh '''
-            npm install --no-audit
-          '''
+        withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+          dependencyCheck additionalArguments: """
+            --scan './'
+            --out './'
+            --format 'ALL'
+            --prettyPrint
+            --nvdApiKey $NVD_API_KEY
+          """,
+          odcInstallation: 'OWASP-DepCheck-12'
         }
       }
-    }
-
-    stage('List Node Modules') {
-      steps {
-        container('nodejs') {
-          sh '''
-            echo "==== node_modules içerik örneği-deneme ===="
-            ls -al node_modules | head
-          '''
+      post {
+        always {
+          dependencyCheckPublisher pattern: 'dependency-check-report.xml', stopBuild: false
         }
       }
     }
