@@ -5,17 +5,16 @@ pipeline {
     }
   }
 
-
-    stages {
-        stage('Node Version') {
-            steps {
-                sh '''
-                    echo "deneme"
-                   echo "deneme-2"
-                '''
-            }
+  stages {
+    stage('Node Version') {
+      steps {
+        container('nodejs') {
+          sh '''
+            node -v
+            npm -v
+          '''
         }
+      }
     }
+  }
 }
-
-
