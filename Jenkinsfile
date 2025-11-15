@@ -21,6 +21,7 @@ pipeline {
           dependencyCheck additionalArguments: """
             --scan './'
             --out './'
+            --data '/home/jenkins/agent/dependency-check-db'
             --format 'ALL'
             --prettyPrint
             --nvdApiKey $NVD_API_KEY
@@ -30,9 +31,10 @@ pipeline {
       }
       post {
         always {
-          dependencyCheckPublisher pattern: '**/dependency-check-report.xml', stopBuild: false
+          dependencyCheckPublisher pattern: 'dependency-check-report.xml', stopBuild: false
         }
       }
     }
+
   }
 }
