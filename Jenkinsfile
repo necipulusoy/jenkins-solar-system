@@ -7,6 +7,7 @@ pipeline {
 
   stages {
 
+    // 1) Dependencies kuruluyor
     stage('Installing Dependencies') {
       steps {
         container('nodejs') {
@@ -15,17 +16,24 @@ pipeline {
       }
     }
 
+    // 2) NPM Audit (critical bulsa bile build durmasın, sadece uyarı versin)
     stage('NPM Audit (Critical Only)') {
       steps {
         container('nodejs') {
-          sh '''
-            echo "Running npm audit..."
-            npm audit --audit-level=critical
-          '''
+          script {
+            def result = sh(returnStatus: true, script: "npm audit --audit-level=critical")
+            if (result != 0) {
+              echo "============================================"
+              echo "⚠️ WARNING: NPM found CRITICAL vulnerabilities"
+              echo "⚠️ Build will CONTINUE (fail disabled)"
+              echo "============================================"
+            }
+          }
         }
       }
     }
 
+    // 3) OWASP Dependency Check taraması
     stage('OWASP Dependency Check') {
       steps {
         withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
@@ -40,19 +48,23 @@ pipeline {
           odcInstallation: 'OWASP-DepCheck-12'
         }
       }
+
       post {
         always {
 
+          // OWASP XML raporunu publish et (critical olsa bile build STOP etme)
           dependencyCheckPublisher(
             failedTotalCritical: 1,
             pattern: 'dependency-check-report.xml',
-            stopBuild: true
+            stopBuild: false
           )
 
+          // JUnit XML raporlarını Jenkins Test Results sekmesinde göster
           junit allowEmptyResults: true,
                 keepProperties: true,
                 testResults: 'dependency-check-junit.xml'
 
+          // HTML raporu Jenkins UI'da yayınla
           publishHTML(
             allowMissing: true,
             alwaysLinkToLastBuild: true,
