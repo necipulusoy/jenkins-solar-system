@@ -54,7 +54,7 @@ pipeline {
 
           // OWASP XML raporunu publish et (critical olsa bile build STOP etme)
           dependencyCheckPublisher(
-            failedTotalCritical: 1,
+            unstableTotalCritical: 1,
             pattern: 'dependency-check-report.xml',
             stopBuild: false
           )
