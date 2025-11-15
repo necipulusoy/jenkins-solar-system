@@ -19,9 +19,9 @@ pipeline {
       steps {
         withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
           dependencyCheck additionalArguments: """
-            --scan './'
-            --out './'
-            --format 'ALL'
+            --scan ./
+            --out ./
+            --format ALL
             --prettyPrint
             --nvdApiKey $NVD_API_KEY
           """,
@@ -30,7 +30,7 @@ pipeline {
       }
       post {
         always {
-          dependencyCheckPublisher pattern: 'dependency-check-report.xml', stopBuild: false
+          dependencyCheckPublisher pattern: './dependency-check-report.xml', stopBuild: false
         }
       }
     }
