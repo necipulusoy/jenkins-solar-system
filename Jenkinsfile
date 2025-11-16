@@ -43,6 +43,7 @@ pipeline {
             --disableRetireJS
             --nodePackageSkipDevDependencies
             --disableYarnAudit
+            --disableOssIndex
           """,
           odcInstallation: 'OWASP-DepCheck-12'
 
