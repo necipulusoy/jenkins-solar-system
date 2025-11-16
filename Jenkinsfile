@@ -1,4 +1,13 @@
 pipeline {
+
+options {
+    timeout(time: 15, unit: 'MINUTES')
+    timestamps()
+    disableConcurrentBuilds(abortPrevious: true)
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+    ansiColor('xterm')
+  }
+
   agent {
     kubernetes {
       label 'k8s-agent-multi'
