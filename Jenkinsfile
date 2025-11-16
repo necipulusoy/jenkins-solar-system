@@ -1,6 +1,6 @@
 pipeline {
 
-options {
+  options {
     timeout(time: 15, unit: 'MINUTES')
     timestamps()
     disableConcurrentBuilds(abortPrevious: true)
@@ -28,7 +28,9 @@ options {
       steps {
         container('nodejs') {
           script {
-            def result = sh(returnStatus: true, script: "npm audit --audit-level=critical")
+            def result = sh(returnStatus: true,
+                            script: "npm audit --audit-level=critical")
+
             if (result != 0) {
               echo "============================================"
               echo "WARNING: NPM found CRITICAL vulnerabilities"
@@ -43,6 +45,7 @@ options {
     stage('OWASP Dependency Check') {
       steps {
         withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+
           dependencyCheck additionalArguments: """
             --scan './'
             --out './'
@@ -66,11 +69,6 @@ options {
             pattern: 'dependency-check-report.xml',
             stopBuild: false
           )
-
-          // JUnit KALDIRILDI (UNSTABLE oluyordu)
-          // junit allowEmptyResults: true,
-          //       keepProperties: true,
-          //       testResults: 'dependency-check-junit.xml'
 
           publishHTML(
             allowMissing: true,
@@ -113,11 +111,56 @@ options {
 
       post {
         always {
-          // Unit test sonuçlarını Jenkins'te göster
           junit allowEmptyResults: true,
-                 keepLongStdio: true,
-                 testResults: 'test-results.xml'
+                keepLongStdio: true,
+                testResults: 'test-results.xml'
         }
+      }
+    }
+
+
+    stage('Code Coverage (MongoDB)') {
+      steps {
+        container('nodejs') {
+
+          // Aynı Mongo credential’ları kullanıyoruz
+          withCredentials([
+            usernamePassword(
+              credentialsId: 'mongodb-creds',
+              usernameVariable: 'MONGO_USERNAME',
+              passwordVariable: 'MONGO_PASSWORD'
+            )
+          ]) {
+
+            script {
+              env.MONGO_URI = "mongodb://${env.MONGO_USERNAME}:${env.MONGO_PASSWORD}@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
+            }
+
+            // catchError: coverage düşük olsa bile pipeline kırılmasın
+            catchError(
+              buildResult: 'SUCCESS',
+              stageResult: 'UNSTABLE',
+              message: 'Oops! it will be fixed in future releases'
+            ) {
+              sh """
+                echo 'Running code coverage...'
+                npm run coverage
+              """
+            }
+          }
+        }
+
+        // Coverage HTML raporunu publish et
+        publishHTML([
+          allowMissing: true,
+          alwaysLinkToLastBuild: true,
+          keepAll: true,
+          reportDir: 'coverage/lcov-report',
+          reportFiles: 'index.html',
+          reportName: 'Code Coverage HTML Report',
+          reportTitles: '',
+          useWrapperFileDirectly: true
+        ])
       }
     }
 
