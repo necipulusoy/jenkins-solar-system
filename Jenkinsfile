@@ -24,8 +24,8 @@ pipeline {
             def result = sh(returnStatus: true, script: "npm audit --audit-level=critical")
             if (result != 0) {
               echo "============================================"
-              echo "⚠️ WARNING: NPM found CRITICAL vulnerabilities"
-              echo "⚠️ Build will CONTINUE (fail disabled)"
+              echo "WARNING: NPM found CRITICAL vulnerabilities"
+              echo "Build will CONTINUE (fail disabled)"
               echo "============================================"
             }
           }
@@ -51,20 +51,16 @@ pipeline {
 
       post {
         always {
-
-          // OWASP XML raporunu publish et (critical olsa bile build STOP etme)
           dependencyCheckPublisher(
             unstableTotalCritical: 1,
             pattern: 'dependency-check-report.xml',
             stopBuild: false
           )
 
-          // JUnit XML raporlarını Jenkins Test Results sekmesinde göster
           junit allowEmptyResults: true,
                 keepProperties: true,
                 testResults: 'dependency-check-junit.xml'
 
-          // HTML raporu Jenkins UI'da yayınla
           publishHTML(
             allowMissing: true,
             alwaysLinkToLastBuild: true,
@@ -75,6 +71,32 @@ pipeline {
             reportTitles: '',
             useWrapperFileDirectly: true
           )
+        }
+      }
+    }
+
+    // 4) Unit Test (MongoDB bağlantılı)
+    stage('Unit Testing (MongoDB)') {
+      steps {
+        container('nodejs') {
+
+          // Jenkins’teki iki ayrı credential burada alınıyor
+          withCredentials([
+            string(credentialsId: 'mongodb-username', variable: 'MONGO_USERNAME'),
+            string(credentialsId: 'mongodb-password', variable: 'MONGO_PASSWORD')
+          ]) {
+
+            // Dinamik MongoDB connection string oluştur
+            script {
+              env.MONGO_URI = "mongodb://${env.MONGO_USERNAME}:${env.MONGO_PASSWORD}@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
+            }
+
+            sh """
+              echo "Running Unit Tests..."
+              echo "Using Mongo URI: \$MONGO_URI"
+              npm test
+            """
+          }
 
         }
       }
