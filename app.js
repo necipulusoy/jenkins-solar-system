@@ -94,10 +94,6 @@ app.get('/ready', function(req, res) {
     res.send({ "status": "ready" });
 });
 
-// Server
-app.listen(3000, () => {
-    console.log("Server successfully running on port - 3000");
-});
 
 // Export for Unit Tests
 module.exports = app;
