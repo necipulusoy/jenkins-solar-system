@@ -7,7 +7,6 @@ pipeline {
 
   stages {
 
-    // 1) Dependencies kuruluyor
     stage('Installing Dependencies') {
       steps {
         container('nodejs') {
@@ -16,27 +15,24 @@ pipeline {
       }
     }
 
-    // 2) NPM Audit (critical bulsa bile build durmasın, sadece uyarı versin)
     stage('NPM Audit (Critical Only)') {
       steps {
         container('nodejs') {
           script {
             def result = sh(returnStatus: true, script: "npm audit --audit-level=critical")
             if (result != 0) {
-              echo "============================================"
               echo "WARNING: NPM found CRITICAL vulnerabilities"
               echo "Build will CONTINUE (fail disabled)"
-              echo "============================================"
             }
           }
         }
       }
     }
 
-    // 3) OWASP Dependency Check taraması
     stage('OWASP Dependency Check') {
       steps {
         withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+
           dependencyCheck additionalArguments: """
             --scan './'
             --out './'
@@ -46,11 +42,13 @@ pipeline {
             --nvdApiKey $NVD_API_KEY
           """,
           odcInstallation: 'OWASP-DepCheck-12'
+
         }
       }
 
       post {
         always {
+
           dependencyCheckPublisher(
             unstableTotalCritical: 1,
             pattern: 'dependency-check-report.xml',
@@ -75,25 +73,28 @@ pipeline {
       }
     }
 
-    // 4) Unit Test (MongoDB bağlantılı)
+ 
     stage('Unit Testing (MongoDB)') {
       steps {
         container('nodejs') {
 
-          // Jenkins’teki iki ayrı credential burada alınıyor
+          // Tek credential (username + password)
           withCredentials([
-            string(credentialsId: 'mongodb-username', variable: 'MONGO_USERNAME'),
-            string(credentialsId: 'mongodb-password', variable: 'MONGO_PASSWORD')
+            usernamePassword(
+              credentialsId: 'mongodb-creds',
+              usernameVariable: 'MONGO_USERNAME',
+              passwordVariable: 'MONGO_PASSWORD'
+            )
           ]) {
 
-            // Dinamik MongoDB connection string oluştur
             script {
+              // Final, doğru connection string
               env.MONGO_URI = "mongodb://${env.MONGO_USERNAME}:${env.MONGO_PASSWORD}@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
             }
 
             sh """
               echo "Running Unit Tests..."
-              echo "Using Mongo URI: \$MONGO_URI"
+              echo "MongoDB connection string generated."
               npm test
             """
           }
