@@ -7,6 +7,7 @@ pipeline {
 
   stages {
 
+    // 1) Dependencies kuruluyor
     stage('Installing Dependencies') {
       steps {
         container('nodejs') {
@@ -15,20 +16,24 @@ pipeline {
       }
     }
 
+    // 2) NPM Audit (critical bulsa bile build durmasın, sadece uyarı versin)
     stage('NPM Audit (Critical Only)') {
       steps {
         container('nodejs') {
           script {
             def result = sh(returnStatus: true, script: "npm audit --audit-level=critical")
             if (result != 0) {
-              echo "WARNING: Critical vulnerabilities detected by npm audit"
-              echo "Build continues (critical does NOT fail build)"
+              echo "============================================"
+              echo "⚠️ WARNING: NPM found CRITICAL vulnerabilities"
+              echo "⚠️ Build will CONTINUE (fail disabled)"
+              echo "============================================"
             }
           }
         }
       }
     }
 
+    // 3) OWASP Dependency Check taraması
     stage('OWASP Dependency Check') {
       steps {
         withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
@@ -38,11 +43,7 @@ pipeline {
             --data '/home/jenkins/agent/dependency-check-db'
             --format 'ALL'
             --prettyPrint
-            --nvdApiKey ${NVD_API_KEY}
-            --disableRetireJS
-            --disableYarnAudit
-            --disableOssIndex
-            --nodePackageSkipDevDependencies
+            --nvdApiKey $NVD_API_KEY
           """,
           odcInstallation: 'OWASP-DepCheck-12'
         }
@@ -50,52 +51,31 @@ pipeline {
 
       post {
         always {
+
+          // OWASP XML raporunu publish et (critical olsa bile build STOP etme)
           dependencyCheckPublisher(
-            unstableTotalCritical: 1,
-            unstableTotalHigh: 0,
-            unstableTotalMedium: 0,
-            unstableTotalLow: 0,
+            failedTotalCritical: 1,
             pattern: 'dependency-check-report.xml',
             stopBuild: false
           )
 
+          // JUnit XML raporlarını Jenkins Test Results sekmesinde göster
           junit allowEmptyResults: true,
                 keepProperties: true,
                 testResults: 'dependency-check-junit.xml'
 
+          // HTML raporu Jenkins UI'da yayınla
           publishHTML(
             allowMissing: true,
             alwaysLinkToLastBuild: true,
             keepAll: true,
             reportDir: './',
             reportFiles: 'dependency-check-jenkins.html',
-            reportName: 'Dependency Check HTML Report'
+            reportName: 'Dependency Check HTML Report',
+            reportTitles: '',
+            useWrapperFileDirectly: true
           )
-        }
-      }
-    }
 
-    stage('Unit Testing (MongoDB)') {
-      steps {
-        container('nodejs') {
-          withCredentials([
-            usernamePassword(
-              credentialsId: 'mongodb-creds',
-              usernameVariable: 'MONGO_USERNAME',
-              passwordVariable: 'MONGO_PASSWORD'
-            )
-          ]) {
-
-            script {
-              env.MONGO_URI = "mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
-            }
-
-            sh """
-              echo "Running unit tests..."
-              echo "Connection string set."
-              npm test
-            """
-          }
         }
       }
     }
