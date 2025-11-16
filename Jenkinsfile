@@ -101,6 +101,15 @@ pipeline {
           }
         }
       }
+
+      post {
+        always {
+          // Unit test sonuçlarını Jenkins'te göster
+          junit allowEmptyResults: true,
+                 keepLongStdio: true,
+                 testResults: 'test-results.xml'
+        }
+      }
     }
 
   }
