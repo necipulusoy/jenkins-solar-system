@@ -4,9 +4,9 @@ const express = require('express');
 const OS = require('os');
 const bodyParser = require('body-parser');
 const mongoose = require("mongoose");
-const app = express();
 const cors = require('cors');
-const serverless = require('serverless-http');
+
+const app = express();
 
 // Middleware
 app.use(bodyParser.json());
@@ -16,9 +16,7 @@ app.use(cors());
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
     user: process.env.MONGO_USERNAME,
-    pass: process.env.MONGO_PASSWORD,
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+    pass: process.env.MONGO_PASSWORD
 }).then(() => {
     console.log("MongoDB Connection Successful");
 }).catch((err) => {
@@ -26,9 +24,9 @@ mongoose.connect(process.env.MONGO_URI, {
 });
 
 // Schema & Model
-var Schema = mongoose.Schema;
+const Schema = mongoose.Schema;
 
-var dataSchema = new Schema({
+const dataSchema = new Schema({
     name: String,
     id: Number,
     description: String,
@@ -37,9 +35,9 @@ var dataSchema = new Schema({
     distance: String
 });
 
-var planetModel = mongoose.model('planets', dataSchema);
+const planetModel = mongoose.model('planets', dataSchema);
 
-// API: Get planet by ID (fixed for Mongoose v7)
+// API: Get planet by ID
 app.post('/planet', async function(req, res) {
     try {
         const planetData = await planetModel.findOne({ id: req.body.id });
@@ -77,26 +75,28 @@ app.get('/api-docs', (req, res) => {
 app.get('/os', function(req, res) {
     res.setHeader('Content-Type', 'application/json');
     res.send({
-        "os": OS.hostname(),
-        "env": process.env.NODE_ENV
+        os: OS.hostname(),
+        env: process.env.NODE_ENV
     });
 });
 
 // Liveness probe
 app.get('/live', function(req, res) {
     res.setHeader('Content-Type', 'application/json');
-    res.send({ "status": "live" });
+    res.send({ status: "live" });
 });
 
 // Readiness probe
 app.get('/ready', function(req, res) {
     res.setHeader('Content-Type', 'application/json');
-    res.send({ "status": "ready" });
+    res.send({ status: "ready" });
 });
 
+// IMPORTANT: DO NOT START SERVER DURING TESTS
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(3000, () => {
+        console.log("Server successfully running on port - 3000");
+    });
+}
 
-// Export for Unit Tests
 module.exports = app;
-
-// For serverless deployments
-// module.exports.handler = serverless(app);

@@ -94,7 +94,6 @@ describe('Planets API Suite', () => {
 
 });
 
-
 describe('Testing Other Endpoints', () => {
 
     it('should fetch OS details', async () => {
@@ -114,4 +113,9 @@ describe('Testing Other Endpoints', () => {
         res.body.should.have.property('status').eql('ready');
     });
 
+});
+
+after(async () => {
+    // TESTLER BİTİNCE MONGOOSE BAĞLANTISINI KAPAT
+    await mongoose.connection.close();
 });

@@ -40,6 +40,8 @@ pipeline {
             --format 'ALL'
             --prettyPrint
             --nvdApiKey $NVD_API_KEY
+            --disableRetireJS
+            --nodePackageSkipDevDependencies
           """,
           odcInstallation: 'OWASP-DepCheck-12'
 
