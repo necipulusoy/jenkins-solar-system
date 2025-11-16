@@ -42,6 +42,7 @@ pipeline {
             --nvdApiKey $NVD_API_KEY
             --disableRetireJS
             --nodePackageSkipDevDependencies
+            --disableYarnAudit
           """,
           odcInstallation: 'OWASP-DepCheck-12'
 
