@@ -49,7 +49,7 @@ pipeline {
 
     stage('OWASP Dependency Check') {
       steps {
-        container('maven') {
+        container('jnlp') {
 
           dependencyCheck additionalArguments: """
             --scan './'
