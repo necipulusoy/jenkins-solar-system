@@ -67,6 +67,16 @@ pipeline {
 
         }
       }
+
+      post {
+        always {
+          dependencyCheckPublisher(
+            unstableTotalCritical: 1,
+            pattern: 'dependency-check-report.xml',
+            stopBuild: false
+          )
+        }
+      }
     }
 
     stage('Unit Testing (MongoDB)') {
@@ -156,13 +166,6 @@ pipeline {
         reportFiles: 'index.html',
         reportName: 'Code Coverage HTML Report'
       ])
-
-      // Dependency Check result publisher
-      dependencyCheckPublisher(
-        unstableTotalCritical: 1,
-        pattern: 'dependency-check-report.xml',
-        stopBuild: false
-      )
 
     }
   }
