@@ -49,7 +49,7 @@ pipeline {
 
     stage('OWASP Dependency Check') {
       steps {
-        container('nodejs') {
+        container('maven') {
 
           dependencyCheck additionalArguments: """
             --scan './'
@@ -57,7 +57,7 @@ pipeline {
             --data '/home/jenkins/agent/dependency-check-db'
             --format 'ALL'
             --prettyPrint
-            --nvdApiKey ${env.NVD_API_KEY}
+            --nvdApiKey ${NVD_API_KEY}
             --disableRetireJS
             --nodePackageSkipDevDependencies
             --disableYarnAudit
@@ -65,16 +65,6 @@ pipeline {
           """,
           odcInstallation: 'OWASP-DepCheck-12'
 
-        }
-      }
-
-      post {
-        always {
-          dependencyCheckPublisher(
-            unstableTotalCritical: 1,
-            pattern: 'dependency-check-report.xml',
-            stopBuild: false
-          )
         }
       }
     }
@@ -118,7 +108,6 @@ pipeline {
           }
         }
 
-        // Coverage HTML raporunu publish et
         publishHTML([
           allowMissing: true,
           alwaysLinkToLastBuild: true,
@@ -136,17 +125,14 @@ pipeline {
   post {
     always {
 
-      // Unit test report
       junit allowEmptyResults: true,
             keepLongStdio: true,
             testResults: 'test-results.xml'
 
-      // Dependency check JUnit output
       junit allowEmptyResults: true,
             keepLongStdio: true,
             testResults: 'dependency-check-junit.xml'
 
-      // OWASP HTML report
       publishHTML(
         allowMissing: true,
         alwaysLinkToLastBuild: true,
@@ -157,7 +143,6 @@ pipeline {
         useWrapperFileDirectly: true
       )
 
-      // Code coverage HTML report
       publishHTML([
         allowMissing: true,
         alwaysLinkToLastBuild: true,
@@ -166,6 +151,12 @@ pipeline {
         reportFiles: 'index.html',
         reportName: 'Code Coverage HTML Report'
       ])
+
+      dependencyCheckPublisher(
+        unstableTotalCritical: 1,
+        pattern: 'dependency-check-report.xml',
+        stopBuild: false
+      )
 
     }
   }
