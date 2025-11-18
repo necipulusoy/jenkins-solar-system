@@ -50,7 +50,6 @@ pipeline {
     stage('OWASP Dependency Check') {
       steps {
         container('jnlp') {
-
           dependencyCheck additionalArguments: """
             --scan './'
             --out './'
@@ -64,7 +63,6 @@ pipeline {
             --disableOssIndex
           """,
           odcInstallation: 'OWASP-DepCheck-12'
-
         }
       }
     }
@@ -107,31 +105,21 @@ pipeline {
             """
           }
         }
+      }
+    }
 
-stage('SAST - SonarQube)') {
+    stage('SAST - SonarQube') {
       steps {
-            sh '''
-                sonar-scanner \
-                  -Dsonar.projectKey=Solar-System-Project \
-                  -Dsonar.sources=. \
-                  -Dsonar.host.url=https://sonarqube.hepapi.com \
-                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                  -Dsonar.token=sqp_29641523e3dbd7d09a856cd0ec95afcb0732d20b
-            '''
-
-          }
+        container('nodejs') {
+          sh '''
+            sonar-scanner \
+              -Dsonar.projectKey=Solar-System-Project \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=https://sonarqube.hepapi.com \
+              -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+              -Dsonar.token=sqp_29641523e3dbd7d09a856cd0ec95afcb0732d20b
+          '''
         }
-
-
-        publishHTML([
-          allowMissing: true,
-          alwaysLinkToLastBuild: true,
-          keepAll: true,
-          reportDir: 'coverage/lcov-report',
-          reportFiles: 'index.html',
-          reportName: 'Code Coverage HTML Report',
-          useWrapperFileDirectly: true
-        ])
       }
     }
 
