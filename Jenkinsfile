@@ -14,6 +14,11 @@ pipeline {
     }
   }
 
+  environment {
+    MONGO_CREDS = credentials('mongodb-creds')
+    NVD_API_KEY = credentials('nvd-api-key')
+  }
+
   stages {
 
     stage('Installing Dependencies') {
@@ -44,7 +49,7 @@ pipeline {
 
     stage('OWASP Dependency Check') {
       steps {
-        withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+        container('nodejs') {
 
           dependencyCheck additionalArguments: """
             --scan './'
@@ -52,34 +57,14 @@ pipeline {
             --data '/home/jenkins/agent/dependency-check-db'
             --format 'ALL'
             --prettyPrint
-            --nvdApiKey $NVD_API_KEY
+            --nvdApiKey ${env.NVD_API_KEY}
             --disableRetireJS
             --nodePackageSkipDevDependencies
             --disableYarnAudit
             --disableOssIndex
           """,
           odcInstallation: 'OWASP-DepCheck-12'
-        }
-      }
 
-      post {
-        always {
-          dependencyCheckPublisher(
-            unstableTotalCritical: 1,
-            pattern: 'dependency-check-report.xml',
-            stopBuild: false
-          )
-
-          publishHTML(
-            allowMissing: true,
-            alwaysLinkToLastBuild: true,
-            keepAll: true,
-            reportDir: './',
-            reportFiles: 'dependency-check-jenkins.html',
-            reportName: 'Dependency Check HTML Report',
-            reportTitles: '',
-            useWrapperFileDirectly: true
-          )
         }
       }
     }
@@ -88,65 +73,38 @@ pipeline {
       steps {
         container('nodejs') {
 
-          withCredentials([
-            usernamePassword(
-              credentialsId: 'mongodb-creds',
-              usernameVariable: 'MONGO_USERNAME',
-              passwordVariable: 'MONGO_PASSWORD'
-            )
-          ]) {
-
-            script {
-              env.MONGO_URI = "mongodb://${env.MONGO_USERNAME}:${env.MONGO_PASSWORD}@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
-            }
-
-            sh """
-              echo 'Running unit tests...'
-              echo 'Connection string set.'
-              npm test
-            """
+          script {
+            env.MONGO_URI = "mongodb://${env.MONGO_CREDS_USR}:${env.MONGO_CREDS_PSW}" +
+                            "@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
           }
-        }
-      }
 
-      post {
-        always {
-          junit allowEmptyResults: true,
-                keepLongStdio: true,
-                testResults: 'test-results.xml'
+          sh """
+            echo 'Running unit tests...'
+            echo 'Connection string set.'
+            npm test
+          """
         }
       }
     }
-
 
     stage('Code Coverage (MongoDB)') {
       steps {
         container('nodejs') {
 
-          // Aynı Mongo credential’ları kullanıyoruz
-          withCredentials([
-            usernamePassword(
-              credentialsId: 'mongodb-creds',
-              usernameVariable: 'MONGO_USERNAME',
-              passwordVariable: 'MONGO_PASSWORD'
-            )
-          ]) {
+          script {
+            env.MONGO_URI = "mongodb://${env.MONGO_CREDS_USR}:${env.MONGO_CREDS_PSW}" +
+                            "@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
+          }
 
-            script {
-              env.MONGO_URI = "mongodb://${env.MONGO_USERNAME}:${env.MONGO_PASSWORD}@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
-            }
-
-            // catchError: coverage düşük olsa bile pipeline kırılmasın
-            catchError(
-              buildResult: 'SUCCESS',
-              stageResult: 'UNSTABLE',
-              message: 'Oops! it will be fixed in future releases'
-            ) {
-              sh """
-                echo 'Running code coverage...'
-                npm run coverage
-              """
-            }
+          catchError(
+            buildResult: 'SUCCESS',
+            stageResult: 'UNSTABLE',
+            message: 'Oops! it will be fixed in future releases'
+          ) {
+            sh """
+              echo 'Running code coverage...'
+              npm run coverage
+            """
           }
         }
 
@@ -158,11 +116,55 @@ pipeline {
           reportDir: 'coverage/lcov-report',
           reportFiles: 'index.html',
           reportName: 'Code Coverage HTML Report',
-          reportTitles: '',
           useWrapperFileDirectly: true
         ])
       }
     }
 
   }
+
+  post {
+    always {
+
+      // Unit test report
+      junit allowEmptyResults: true,
+            keepLongStdio: true,
+            testResults: 'test-results.xml'
+
+      // Dependency check JUnit output
+      junit allowEmptyResults: true,
+            keepLongStdio: true,
+            testResults: 'dependency-check-junit.xml'
+
+      // OWASP HTML report
+      publishHTML(
+        allowMissing: true,
+        alwaysLinkToLastBuild: true,
+        keepAll: true,
+        reportDir: './',
+        reportFiles: 'dependency-check-jenkins.html',
+        reportName: 'Dependency Check HTML Report',
+        useWrapperFileDirectly: true
+      )
+
+      // Code coverage HTML report
+      publishHTML([
+        allowMissing: true,
+        alwaysLinkToLastBuild: true,
+        keepAll: true,
+        reportDir: 'coverage/lcov-report',
+        reportFiles: 'index.html',
+        reportName: 'Code Coverage HTML Report'
+      ])
+
+      // Dependency Check result publisher
+      dependencyCheckPublisher(
+        unstableTotalCritical: 1,
+        pattern: 'dependency-check-report.xml',
+        stopBuild: false
+      )
+
+    }
+  }
+
 }
