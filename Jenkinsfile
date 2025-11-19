@@ -140,6 +140,8 @@ pipeline {
                 sonar-scanner \
                   -Dsonar.projectKey=Solar-System-Project \
                   -Dsonar.sources=. \
+                  -Dsonar.tests=app-test.js \
+                  -Dsonar.exclusions=coverage/** \
                   -Dsonar.host.url=$SONAR_HOST_URL \
                   -Dsonar.token=$SONAR_TOKEN \
                   -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
