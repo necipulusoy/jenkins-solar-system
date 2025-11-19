@@ -106,6 +106,31 @@ pipeline {
       }
     }
 
+
+    stage('Check Coverage Files') {
+      steps {
+        container('nodejs') {
+          sh """
+            echo '=== Workspace ==='
+            pwd
+            ls -la
+
+            echo '=== coverage klasörü kontrol ==='
+            ls -la coverage || echo 'coverage klasörü yok!'
+
+            echo '=== lcov.info kontrol ==='
+            if [ -f coverage/lcov.info ]; then
+              echo 'lcov.info bulundu:'
+              ls -lh coverage/lcov.info
+              head -n 20 coverage/lcov.info
+            else
+              echo 'lcov.info bulunamadı!'
+            fi
+          """
+        }
+      }
+    }
+
     stage('SAST - SonarQube') {
       steps {
         container('sonar') {
@@ -116,7 +141,8 @@ pipeline {
                   -Dsonar.projectKey=Solar-System-Project \
                   -Dsonar.sources=. \
                   -Dsonar.host.url=$SONAR_HOST_URL \
-                  -Dsonar.token=$SONAR_TOKEN
+                  -Dsonar.token=$SONAR_TOKEN \
+                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
               """
             }
           }
@@ -124,7 +150,7 @@ pipeline {
       }
     }
 
-  }  
+  }
 
   post {
     always {
