@@ -111,18 +111,20 @@ pipeline {
     stage('SAST - SonarQube') {
       steps {
         container('sonar') {
-          sh '''
-            sonar-scanner \
-              -Dsonar.projectKey=Solar-System-Project \
-              -Dsonar.sources=. \
-              -Dsonar.host.url=https://sonarqube.hepapi.com \
-              -Dsonar.token=sqp_29641523e3dbd7d09a856cd0ec95afcb0732d20b
-          '''
+          withSonarQubeEnv('sonar-server') {
+            withCredentials([string(credentialsId: 'sonar-hepapi', variable: 'SONAR_TOKEN')]) {
+              sh """
+                sonar-scanner \
+                  -Dsonar.projectKey=Solar-System-Project \
+                  -Dsonar.sources=. \
+                  -Dsonar.host.url=$SONAR_HOST_URL \
+                  -Dsonar.token=$SONAR_TOKEN
+              """
+            }
+          }
         }
       }
     }
-
-  }
 
   post {
     always {
