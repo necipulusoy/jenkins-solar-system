@@ -136,7 +136,7 @@ pipeline {
         container('sonar') {
           withSonarQubeEnv('sonar-server') {
             withCredentials([string(credentialsId: 'sonar-hepapi', variable: 'SONAR_TOKEN')]) {
-              sh """
+              sh '''
                 sonar-scanner \
                   -Dsonar.projectKey=Solar-System-Project \
                   -Dsonar.sources=. \
