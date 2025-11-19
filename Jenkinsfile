@@ -116,7 +116,6 @@ pipeline {
               -Dsonar.projectKey=Solar-System-Project \
               -Dsonar.sources=. \
               -Dsonar.host.url=https://sonarqube.hepapi.com \
-              -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
               -Dsonar.token=sqp_29641523e3dbd7d09a856cd0ec95afcb0732d20b
           '''
         }
