@@ -124,7 +124,7 @@ pipeline {
       }
     }
 
-  }  // ← Stages düzgün kapandı
+  }  
 
   post {
     always {
