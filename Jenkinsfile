@@ -110,7 +110,7 @@ pipeline {
 
     stage('SAST - SonarQube') {
       steps {
-        container('nodejs') {
+        container('jnlp') {
           sh '''
             sonar-scanner \
               -Dsonar.projectKey=Solar-System-Project \
