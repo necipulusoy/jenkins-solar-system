@@ -70,7 +70,6 @@ pipeline {
     stage('Unit Testing (MongoDB)') {
       steps {
         container('nodejs') {
-
           script {
             env.MONGO_URI = "mongodb://${env.MONGO_CREDS_USR}:${env.MONGO_CREDS_PSW}" +
                             "@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
@@ -88,7 +87,6 @@ pipeline {
     stage('Code Coverage (MongoDB)') {
       steps {
         container('nodejs') {
-
           script {
             env.MONGO_URI = "mongodb://${env.MONGO_CREDS_USR}:${env.MONGO_CREDS_PSW}" +
                             "@np-dev-mongodb.database.svc.cluster.local:27017/solarsystem?authSource=solarsystem"
@@ -125,6 +123,8 @@ pipeline {
         }
       }
     }
+
+  }  // ← Stages düzgün kapandı
 
   post {
     always {
