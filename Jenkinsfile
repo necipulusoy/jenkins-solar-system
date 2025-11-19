@@ -138,11 +138,13 @@ pipeline {
             withCredentials([string(credentialsId: 'sonar-hepapi', variable: 'SONAR_TOKEN')]) {
               sh '''
                 sonar-scanner \
-                  -Dsonar.projectKey=Solar-System-Project \
-                  -Dsonar.sources=. \
-                  -Dsonar.host.url=$SONAR_HOST_URL \
-                  -Dsonar.token=$SONAR_TOKEN \
-                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+                    -Dsonar.projectKey=Solar-System-Project \
+                    -Dsonar.sources=app.js \
+                    -Dsonar.tests=app-test.js \
+                    -Dsonar.exclusions=coverage/**,app-test.js \
+                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.token=$SONAR_TOKEN \
+                    -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
               '''
             }
           }
