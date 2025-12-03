@@ -17,6 +17,13 @@ pipeline {
   environment {
     MONGO_CREDS = credentials('mongodb-creds')
     NVD_API_KEY = credentials('nvd-api-key')
+
+    // DOCKER & NEXUS IMAGE PUSH CONFIG
+    REGISTRY   = "my-nexus-repository-manager.nexus.svc.cluster.local:8082"
+    REPO_PATH  = "repository/nexusimagerepository"
+    IMAGE_NAME = "spring-petclinic-dev"
+    CHART_NAME = "spring-petclinic-dev"
+    NEXUS_HELM_REPO = "http://my-nexus-repository-manager.nexus.svc.cluster.local:8081/repository/nexushelmrepository/"
   }
 
   stages {
@@ -138,9 +145,46 @@ pipeline {
       }
     }
 
+    stage('Login to Nexus') {
+      steps {
+        container('docker') {
+          withCredentials([usernamePassword(
+            credentialsId: 'nexus-docker-creds',
+            usernameVariable: 'USER',
+            passwordVariable: 'PASS'
+          )]) {
+            sh '''
+              echo "$PASS" | docker login "$REGISTRY" -u "$USER" --password-stdin
+            '''
+          }
+        }
+      }
+    }
 
+    stage('Build Docker Image') {
+      steps {
+        container('docker') {
+          sh '''
+            IMAGE_TAG="1.0.${BUILD_NUMBER}"
+            echo $IMAGE_TAG > version.txt
+            docker build -t "$REGISTRY/$REPO_PATH/$IMAGE_NAME:$IMAGE_TAG" .
+          '''
+        }
+      }
+    }
 
+    stage('Push Docker Image to Nexus') {
+      steps {
+        container('docker') {
+          sh '''
+            IMAGE_TAG=$(cat version.txt)
+            docker push "$REGISTRY/$REPO_PATH/$IMAGE_NAME:$IMAGE_TAG"
+          '''
+        }
+      }
+    }
 
+  }
 
 
   }
