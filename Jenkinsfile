@@ -18,11 +18,10 @@ pipeline {
     MONGO_CREDS = credentials('mongodb-creds')
     NVD_API_KEY = credentials('nvd-api-key')
 
-    // DOCKER & NEXUS IMAGE PUSH CONFIG
     REGISTRY   = "my-nexus-repository-manager.nexus.svc.cluster.local:8082"
     REPO_PATH  = "repository/nexusimagerepository"
-    IMAGE_NAME = "spring-petclinic-dev"
-    CHART_NAME = "spring-petclinic-dev"
+    IMAGE_NAME = "spring-petclinic-feature-enabling-cicd"
+    CHART_NAME = "spring-petclinic-feature-enabling-cicd"
     NEXUS_HELM_REPO = "http://my-nexus-repository-manager.nexus.svc.cluster.local:8081/repository/nexushelmrepository/"
   }
 
@@ -84,7 +83,6 @@ pipeline {
 
           sh """
             echo 'Running unit tests...'
-            echo 'Connection string set.'
             npm test
           """
         }
@@ -113,8 +111,6 @@ pipeline {
       }
     }
 
-
-
     stage('SAST - SonarQube') {
       steps {
         container('sonar') {
@@ -135,7 +131,6 @@ pipeline {
         }
       }
     }
-
 
     stage('Quality Gate') {
       steps {
@@ -184,10 +179,7 @@ pipeline {
       }
     }
 
-  }
-
-
-  }
+  }  // <-- STAGES BURADA KAPANIYOR
 
   post {
     always {
